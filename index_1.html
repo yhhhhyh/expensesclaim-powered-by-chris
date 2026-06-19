@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Expenses Claim System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #1a1a1a; font-size: 14px; line-height: 1.5; }
+  a { color: #2563eb; }
+  .topbar { background: #fff; border-bottom: 1px solid #e5e5e5; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .topbar-sub { font-size: 11px; color: #9ca3af; font-weight: 400; margin-left: 4px; }
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+  .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-title { font-size: 12px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .step-num { width: 20px; height: 20px; border-radius: 50%; background: #f0f0f0; border: 1px solid #ddd; font-size: 11px; display: flex; align-items: center; justify-content: center; color: #666; flex-shrink: 0; }
+  .step-num.done { background: #dcfce7; border-color: #16a34a; color: #16a34a; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .fgroup { display: flex; flex-direction: column; gap: 4px; }
+  .fgroup label { font-size: 11px; color: #666; font-weight: 500; }
+  .fgroup input, .fgroup select { font-size: 13px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; color: #1a1a1a; width: 100%; outline: none; }
+  .fgroup input:focus { border-color: #2563eb; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; border: 1px solid #ddd; background: #fff; color: #1a1a1a; display: inline-flex; align-items: center; gap: 6px; transition: all 0.12s; font-weight: 500; white-space: nowrap; }
+  .btn:hover { background: #f5f5f5; }
+  .btn-primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-green { background: #16a34a; color: #fff; border-color: #16a34a; }
+  .btn-green:hover { background: #15803d; }
+  .btn-danger { color: #dc2626; border-color: transparent; background: transparent; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .connected-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #16a34a; background: #dcfce7; border-radius: 20px; padding: 5px 12px; font-weight: 500; }
+  .folder-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #555; background: #f5f5f5; border-radius: 20px; padding: 4px 10px; margin-left: 8px; }
+  .upload-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; background: #fafafa; transition: all 0.15s; }
+  .upload-zone:hover, .upload-zone.drag { border-color: #2563eb; background: #eff6ff; }
+  .upload-zone p { color: #6b7280; font-size: 14px; }
+  #file-input { display: none; }
+  .summary-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .metric { background: #f9fafb; border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px 14px; flex: 1; min-width: 120px; }
+  .metric-label { font-size: 11px; color: #6b7280; margin-bottom: 4px; }
+  .metric-value { font-size: 18px; font-weight: 600; color: #111; }
+  .metric-value.good { color: #16a34a; }
+  .metric-value.warn { color: #d97706; }
+  .metric-value.bad { color: #dc2626; }
+  .section-header { display: flex; align-items: center; gap: 8px; margin: 20px 0 10px; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.05em; }
+  .section-header::after { content: ''; flex: 1; height: 1px; background: #e5e5e5; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: #16a34a; }
+  .dot-gray { background: #9ca3af; }
+  .receipt-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px; margin-bottom: 8px; }
+  .receipt-card.conf-low { border-left: 3px solid #dc2626; }
+  .receipt-card.conf-medium { border-left: 3px solid #d97706; }
+  .receipt-card.conf-high { border-left: 3px solid #16a34a; }
+  .receipt-top { display: flex; gap: 10px; align-items: flex-start; }
+  .receipt-thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e5e5; flex-shrink: 0; cursor: pointer; }
+  .receipt-thumb-ph { width: 56px; height: 56px; border-radius: 8px; background: #f3f4f6; border: 1px solid #e5e5e5; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 18px; }
+  .receipt-fields { flex: 1; display: grid; grid-template-columns: 1fr 1fr 0.8fr 0.5fr; gap: 7px; }
+  .receipt-fields input { font-size: 12px; padding: 6px 8px; border-radius: 7px; border: 1px solid #ddd; background: #fff; color: #1a1a1a; width: 100%; outline: none; }
+  .receipt-link-row { margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; gap: 6px; }
+  .receipt-link-row input { flex: 1; font-size: 11px; padding: 5px 8px; border-radius: 7px; border: 1px solid #e5e5e5; background: #f9fafb; color: #555; outline: none; }
+  .receipt-link-row input.has-link { background: #f0fdf4; border-color: #86efac; color: #15803d; font-weight: 500; }
+  .receipt-status { margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+  .badge-food { background: #dcfce7; color: #15803d; }
+  .badge-transport { background: #dbeafe; color: #1d4ed8; }
+  .badge-hotel { background: #ede9fe; color: #6d28d9; }
+  .badge-esim { background: #fef3c7; color: #92400e; }
+  .badge-pending { background: #f3f4f6; color: #6b7280; }
+  .badge-error { background: #fee2e2; color: #dc2626; }
+  .badge-warn { background: #fef3c7; color: #92400e; }
+  .conf-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+  .conf-high { background: #dcfce7; color: #15803d; }
+  .conf-medium { background: #fef3c7; color: #92400e; }
+  .conf-low { background: #fee2e2; color: #dc2626; }
+  .conf-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .conf-dot-high { background: #16a34a; }
+  .conf-dot-medium { background: #d97706; }
+  .conf-dot-low { background: #dc2626; }
+  .spinner { width: 12px; height: 12px; border: 2px solid #d1d5db; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .progress-bar-wrap { background: #e5e7eb; border-radius: 99px; height: 6px; overflow: hidden; margin-top: 8px; }
+  .progress-bar { height: 100%; background: #2563eb; border-radius: 99px; transition: width 0.3s; }
+  .hint { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.5; }
+  .actions-row { display: flex; gap: 10px; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #e5e5e5; margin-top: 16px; flex-wrap: wrap; }
+  .empty-state { text-align: center; padding: 24px; color: #9ca3af; font-size: 13px; }
+  .tag-raw { font-size: 11px; color: #9ca3af; }
+  .lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 999; align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+  .lightbox-close { position: fixed; top: 16px; right: 20px; color: #fff; font-size: 32px; cursor: pointer; }
+  .export-status { font-size: 13px; color: #6b7280; margin-top: 8px; min-height: 20px; }
+  .conf-legend { display: flex; gap: 12px; font-size: 11px; color: #6b7280; margin-top: 8px; flex-wrap: wrap; }
+  .conf-legend-item { display: flex; align-items: center; gap: 4px; }
+  .cdrop { position: relative; width: 100%; }
+  .cdrop-input { font-size: 12px; padding: 6px 8px; border-radius: 7px; border: 1px solid #ddd; background: #fff; color: #1a1a1a; width: 100%; outline: none; cursor: pointer; }
+  .cdrop-input:focus { border-color: #2563eb; }
+  .cdrop-list { display: none; position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 50; max-height: 200px; overflow-y: auto; margin-top: 2px; }
+  .cdrop-list.open { display: block; }
+  .cdrop-item { padding: 7px 10px; font-size: 12px; cursor: pointer; }
+  .cdrop-item:hover { background: #eff6ff; }
+  .cdrop-item.active { background: #dbeafe; font-weight: 500; }
+  .cdrop-divider { height: 1px; background: #e5e5e5; margin: 2px 0; }
+  .welcome-box { background: linear-gradient(135deg, #eff6ff, #f0fdf4); border: 1px solid #bfdbfe; border-radius: 12px; padding: 20px; margin-bottom: 16px; text-align: center; }
+  .welcome-box h2 { font-size: 18px; margin-bottom: 6px; }
+  .welcome-box p { color: #6b7280; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-title">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M9 9v10"/></svg>
+    Expenses Claim System <span class="topbar-sub">Powered by Chris</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span id="drive-status-top"></span>
+    <button class="btn btn-green" onclick="exportToSheets()">Export to Google Sheets</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="welcome-box" id="welcome-box">
+    <h2>Welcome to Expenses Claim System</h2>
+    <p>Connect your Google Drive below, then upload your receipt screenshots. AI will do the rest.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-num" id="sn-gdrive">1</span> Connect your Google Drive</div>
+    <div id="gdrive-setup">
+      <button class="btn btn-primary" onclick="connectGDrive()" style="width:100%;justify-content:center;padding:12px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"/></svg>
+        Connect Google Drive
+      </button>
+      <p class="hint" style="text-align:center;margin-top:8px;">Your receipts and spreadsheets are saved to <strong>your own</strong> Google Drive. Nobody else can see them.</p>
+    </div>
+    <div id="gdrive-connected" style="display:none;">
+      <span class="connected-pill">✓ Google Drive connected</span>
+      <span class="folder-pill" id="folder-pill">📁 —</span>
+      <button class="btn btn-sm" style="margin-left:8px;" onclick="disconnectGDrive()">Disconnect</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-num">2</span> Claim details</div>
+    <div class="grid3" style="margin-bottom:12px;">
+      <div class="fgroup"><label>Claimant name</label><input id="f-claimant" placeholder="Full name" /></div>
+      <div class="fgroup"><label>Project</label><input id="f-project" placeholder="Project name" /></div>
+      <div class="fgroup"><label>Account No. / Wallet</label><input id="f-account" placeholder="e.g. wallet address" /></div>
+    </div>
+    <div class="grid3">
+      <div class="fgroup"><label>Claim currency</label><input id="f-currency" value="USDT" readonly style="background:#f3f4f6;cursor:not-allowed;" /></div>
+      <div class="fgroup"><label>Country visited</label><input id="f-country" placeholder="e.g. China" /></div>
+      <div class="fgroup"><label>Claim date</label><input id="f-claimdate" type="date" /></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="step-num">3</span> Upload receipt screenshots</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <p style="font-size:28px;margin-bottom:6px;">⬆</p>
+      <p><strong>Click to upload</strong> or drag & drop — select all receipts at once</p>
+    </div>
+    <input type="file" id="file-input" multiple accept="image/*" onchange="handleFiles(this.files)" />
+    <div id="progress-wrap" style="display:none;margin-top:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-bottom:4px;">
+        <span id="progress-label">Processing…</span><span id="progress-count">0 / 0</span>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="card" id="sessions-card" style="display:none;">
+    <div class="card-title">📂 Saved sessions</div>
+    <div id="sessions-list"></div>
+  </div>
+
+  <div id="receipts-area" style="display:none;">
+    <div class="summary-bar" id="summary-bar"></div>
+    <div class="conf-legend">
+      <span class="conf-legend-item"><span class="conf-dot conf-dot-high"></span> High confidence</span>
+      <span class="conf-legend-item"><span class="conf-dot conf-dot-medium"></span> Medium — verify</span>
+      <span class="conf-legend-item"><span class="conf-dot conf-dot-low"></span> Low — manual review</span>
+    </div>
+    <div class="section-header" style="margin-top:16px;"><span class="dot dot-green"></span> Food & accommodation</div>
+    <div id="food-list"></div>
+    <div class="section-header"><span class="dot dot-gray"></span> Others</div>
+    <div id="others-list"></div>
+    <div class="actions-row">
+      <button class="btn btn-danger" onclick="clearAll()">Clear all</button>
+      <button class="btn btn-green" onclick="exportToSheets()">Export to Google Sheets</button>
+    </div>
+    <div class="export-status" id="export-status"></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">&times;</span>
+  <img id="lightbox-img" src="" alt="receipt" />
+</div>
+
+<script>
+// ===== CONFIG — EDIT THESE =====
+const API_KEY = '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';
+const CLIENT_ID = '976257087527-9k238dto34tj6id4pnmhkhbk4j43mkb7.apps.googleusercontent.com';
+// ================================
+
+let expenses = [];
+let gAccessToken = null;
+let claimFolderId = null;
+let claimFolderName = null;
+let processingCount = 0;
+let totalCount = 0;
+
+const PARTICULARS = ['Food and Beverages','Transportation','Hotel','E-Sim'];
+const CURRENCIES = ['USDT','MYR','RMB','HKD','SGD','INR','PHP','JPY','KRW'];
+
+const PARTICULAR_MAP = [
+  { keys: ['consumption','food & beverage','food and beverage','food & beverages','food and beverages','beverage','restaurant','dining','meals','cafe','coffee','eat','snack','餐饮','外卖','food delivery','meituan','美团','eleme','饿了么','mcdonald','kfc','starbucks','burger','pizza','noodle','rice','breakfast','lunch','dinner','bakery','dessert','drink','bar','pub','canteen','hawker','kopitiam','mamak','restaurants','fast food','food court','grocery','supermarket','convenience store','7-eleven','711','familymart','lawson','watsons'], val: 'Food and Beverages', section: 'food' },
+  { keys: ['transport','transportation','travel','taxi','grab','flight','train','bus','ride','uber','didi','bolt','gojek','lyft','trip.com','ctrip','airasia','malaysia airlines','scoot','jetstar','cathay','emirates','singapore airlines','railway','metro','subway','mrt','lrt','toll','parking','fuel','petrol','gas station','出行','打车','ride hailing','航班','机票','car rental','ferry','boat'], val: 'Transportation', section: 'others' },
+  { keys: ['communication','e-sim','esim','telecom','sim','airalo','data plan','mobile data','roaming'], val: 'E-Sim', section: 'others' },
+  { keys: ['housing','hotel','accommodation','lodging','resort','hostel','airbnb','booking.com','agoda','marriott','hilton','hyatt','sheraton','intercontinental','holiday inn','novotel','ibis','ritz','四季','万豪','希尔顿','酒店','民宿','motel','inn','suites','residence','oyo','trip.com hotel','住宿'], val: 'Hotel', section: 'food' },
+];
+
+function mapParticular(raw) {
+  const k = (raw || '').toLowerCase().trim();
+  for (const m of PARTICULAR_MAP) { if (m.keys.some(key => k.includes(key))) return { val: m.val, section: m.section }; }
+  return { val: '', section: 'others' };
+}
+function getSection(p) { for (const m of PARTICULAR_MAP) { if (m.val === p) return m.section; } return 'others'; }
+function getBadgeClass(p) { if (p==='Food and Beverages') return 'badge-food'; if (p==='Transportation') return 'badge-transport'; if (p==='Hotel') return 'badge-hotel'; if (p==='E-Sim') return 'badge-esim'; return 'badge-pending'; }
+function normalizeCurrency(c) {
+  if (!c) return ''; c = c.toUpperCase().trim();
+  if (c==='USD'||c==='USDT') return 'USDT'; if (c==='CNY'||c==='RMB'||c==='¥'||c==='YUAN') return 'RMB';
+  if (c==='RM'||c==='MYR'||c==='RINGGIT') return 'MYR'; if (c==='HKD'||c==='HK$') return 'HKD';
+  if (c==='SGD'||c==='S$') return 'SGD'; if (c==='INR'||c==='₹') return 'INR';
+  if (c==='PHP'||c==='₱') return 'PHP'; if (c==='JPY'||c==='YEN') return 'JPY';
+  if (c==='KRW'||c==='WON'||c==='₩') return 'KRW'; return c;
+}
+function calcConfidence(e) {
+  if (e.error||e.loading) return 'low'; let s=0;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(e.date)) s++;
+  if (e.particular&&e.particular.trim().length>0) s++;
+  if (e.amount&&!isNaN(parseFloat(e.amount))&&parseFloat(e.amount)>0) s++;
+  if (!e.currency||e.currency==='UNKNOWN') s=Math.min(s,1);
+  return s===3?'high':s===2?'medium':'low';
+}
+function getAllCurrencies() {
+  const set = new Set(); expenses.forEach(e => { if (e.currency&&e.currency!=='USDT'&&e.currency!=='UNKNOWN') set.add(e.currency); }); return Array.from(set).sort();
+}
+function parseDate(d) { if (!d) return 0; const p=d.split('/'); return p.length===3?new Date(p[2],p[1]-1,p[0]).getTime():0; }
+function findDuplicates() {
+  const dupes = new Set();
+  for (let i=0;i<expenses.length;i++) { if (expenses[i].loading||expenses[i].error) continue;
+    for (let j=i+1;j<expenses.length;j++) { if (expenses[j].loading||expenses[j].error) continue;
+      if (expenses[i].date&&expenses[i].date===expenses[j].date&&expenses[i].amount&&expenses[i].amount===expenses[j].amount&&expenses[i].currency&&expenses[i].currency===expenses[j].currency) dupes.add(expenses[j].id);
+  }} return dupes;
+}
+
+document.getElementById('f-claimdate').value = new Date().toISOString().slice(0,10);
+
+// ===== CUSTOM DROPDOWN =====
+let activeDropdown = null;
+document.addEventListener('click', ev => { if (activeDropdown&&!activeDropdown.contains(ev.target)) { activeDropdown.querySelector('.cdrop-list').classList.remove('open'); activeDropdown=null; } });
+function openDrop(el) { const w=el.closest('.cdrop'),l=w.querySelector('.cdrop-list'); if(activeDropdown&&activeDropdown!==w) activeDropdown.querySelector('.cdrop-list').classList.remove('open'); l.classList.toggle('open'); activeDropdown=l.classList.contains('open')?w:null; }
+function pickDrop(el,id,field,val) { const w=el.closest('.cdrop'); w.querySelector('.cdrop-input').value=val; w.querySelector('.cdrop-list').classList.remove('open'); activeDropdown=null; update(id,field,val); }
+function filterDrop(el,id,field) { const v=el.value,l=el.closest('.cdrop').querySelector('.cdrop-list'); l.classList.add('open'); activeDropdown=el.closest('.cdrop'); Array.from(l.querySelectorAll('.cdrop-item')).forEach(i => { i.style.display=i.textContent.toLowerCase().includes(v.toLowerCase())?'':'none'; }); }
+function customDrop(el,id,field) { const v=el.value.trim(); if(v) update(id,field,v); }
+
+// ===== SESSION STORAGE =====
+const SESSION_PREFIX = 'expense_session_';
+function getSessionKey(d) { return SESSION_PREFIX+d; }
+function saveSession() {
+  const date=document.getElementById('f-claimdate').value; if(!date||!expenses.length) return;
+  const slim=expenses.map(e=>({id:e.id,date:e.date,particular:e.particular,amount:e.amount,currency:e.currency,section:e.section,receiptUrl:e.receiptUrl,categoryRaw:e.categoryRaw,confidence:e.confidence,confidenceReason:e.confidenceReason,error:e.error}));
+  try{localStorage.setItem(getSessionKey(date),JSON.stringify({claimDate:date,claimant:document.getElementById('f-claimant').value,project:document.getElementById('f-project').value,account:document.getElementById('f-account').value,country:document.getElementById('f-country').value,expenses:slim,savedAt:new Date().toISOString()}))}catch(e){}
+}
+function listSessions() {
+  const l=[]; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i); if(k&&k.startsWith(SESSION_PREFIX)){try{const d=JSON.parse(localStorage.getItem(k));l.push({key:k,claimDate:d.claimDate,count:(d.expenses||[]).length,savedAt:d.savedAt,claimant:d.claimant})}catch(e){}}} return l.sort((a,b)=>(b.savedAt||'').localeCompare(a.savedAt||''));
+}
+function loadSession(key) {
+  try{const d=JSON.parse(localStorage.getItem(key));document.getElementById('f-claimdate').value=d.claimDate||'';document.getElementById('f-claimant').value=d.claimant||'';document.getElementById('f-project').value=d.project||'';document.getElementById('f-account').value=d.account||'';document.getElementById('f-country').value=d.country||'';expenses=(d.expenses||[]).map(e=>({...e,loading:false,uploading:false,imageData:null}));document.getElementById('receipts-area').style.display='block';document.getElementById('sessions-card').style.display='none';document.getElementById('welcome-box').style.display='none';renderAll();if(gAccessToken)ensureClaimFolder();}catch(e){alert('Could not load session.');}
+}
+function deleteSession(key,ev){ev.stopPropagation();if(confirm('Delete this session?')){localStorage.removeItem(key);renderSessionsList();}}
+function renderSessionsList() {
+  const s=listSessions(),card=document.getElementById('sessions-card'); if(!s.length){card.style.display='none';return;} card.style.display='block';
+  document.getElementById('sessions-list').innerHTML=s.map(s=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #e5e5e5;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#fff;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#fff'" onclick="loadSession('${s.key}')"><div><div style="font-weight:500;">Claim ${s.claimDate}${s.claimant?' — '+s.claimant:''}</div><div style="font-size:12px;color:#6b7280;">${s.count} receipts · saved ${timeAgo(s.savedAt)}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm btn-primary" onclick="event.stopPropagation();loadSession('${s.key}')">Resume</button><button class="btn btn-sm btn-danger" onclick="deleteSession('${s.key}',event)">✕</button></div></div>`).join('');
+}
+function timeAgo(iso){if(!iso)return '';const d=(Date.now()-new Date(iso).getTime())/1000;if(d<60)return 'just now';if(d<3600)return Math.floor(d/60)+'m ago';if(d<86400)return Math.floor(d/3600)+'h ago';return Math.floor(d/86400)+'d ago';}
+
+// ===== INIT =====
+window.addEventListener('load', () => { checkAuthReturn(); renderSessionsList();
+  document.getElementById('f-claimdate').addEventListener('change',renderSessionsList);
+  ['f-claimant','f-project','f-account','f-country'].forEach(id=>{document.getElementById(id).addEventListener('change',saveSession);});
+});
+
+// ===== GOOGLE DRIVE =====
+function getRedirectUri() { const l=window.location; return l.origin+l.pathname; }
+function connectGDrive() {
+  const scope=encodeURIComponent('https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets');
+  window.location.href=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(CLIENT_ID)}&redirect_uri=${encodeURIComponent(getRedirectUri())}&response_type=token&scope=${scope}&prompt=consent`;
+}
+function checkAuthReturn() {
+  const h=window.location.hash; if(h&&h.includes('access_token')){gAccessToken=new URLSearchParams(h.slice(1)).get('access_token');history.replaceState(null,'',window.location.pathname);onGDriveConnected();}
+}
+async function onGDriveConnected() {
+  document.getElementById('gdrive-setup').style.display='none';document.getElementById('gdrive-connected').style.display='block';document.getElementById('sn-gdrive').classList.add('done');document.getElementById('drive-status-top').innerHTML='<span style="font-size:12px;color:#16a34a;">✓ Drive connected</span>';await ensureClaimFolder();
+}
+function disconnectGDrive(){gAccessToken=null;claimFolderId=null;document.getElementById('gdrive-setup').style.display='block';document.getElementById('gdrive-connected').style.display='none';document.getElementById('sn-gdrive').classList.remove('done');document.getElementById('drive-status-top').innerHTML='';}
+async function gdriveGet(url){return(await fetch(url,{headers:{'Authorization':`Bearer ${gAccessToken}`}})).json();}
+async function gdrivePost(url,body){return(await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${gAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify(body)})).json();}
+async function ensureClaimFolder() {
+  const ds=document.getElementById('f-claimdate').value||new Date().toISOString().slice(0,10),bn=`Claim_${ds}`;
+  const rr=await gdriveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent("name='Expense Receipts' and mimeType='application/vnd.google-apps.folder' and trashed=false")}&fields=files(id,name)`);
+  let pid; if(rr.files?.length>0) pid=rr.files[0].id; else pid=(await gdrivePost('https://www.googleapis.com/drive/v3/files',{name:'Expense Receipts',mimeType:'application/vnd.google-apps.folder'})).id;
+  const er=await gdriveGet(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`'${pid}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`)}&fields=files(id,name)`);
+  const ns=(er.files||[]).map(f=>f.name);let fn=bn,s=1;while(ns.includes(fn))fn=`${bn}_${s++}`;
+  claimFolderId=(await gdrivePost('https://www.googleapis.com/drive/v3/files',{name:fn,mimeType:'application/vnd.google-apps.folder',parents:[pid]})).id;claimFolderName=fn;document.getElementById('folder-pill').textContent=`📁 ${fn}`;
+}
+async function uploadToDrive(b64,mime,fname){
+  if(!gAccessToken||!claimFolderId)return null;
+  try{const bin=atob(b64),arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);const form=new FormData();form.append('metadata',new Blob([JSON.stringify({name:fname,parents:[claimFolderId]})],{type:'application/json'}));form.append('file',new Blob([arr],{type:mime}));const data=await(await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',headers:{'Authorization':`Bearer ${gAccessToken}`},body:form})).json();if(!data.id)return null;await fetch(`https://www.googleapis.com/drive/v3/files/${data.id}/permissions`,{method:'POST',headers:{'Authorization':`Bearer ${gAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});return`https://drive.google.com/file/d/${data.id}/view`;}catch(e){return null;}
+}
+
+// ===== AI SCANNING =====
+async function scanWithAI(b64,mime) {
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:mime,data:b64}},
+        {type:'text',text:`Analyze this transaction/receipt screenshot. Extract and respond ONLY in raw JSON (no markdown):
+{"date":"DD/MM/YYYY","category_raw":"full raw category/merchant info visible on receipt","amount":"numeric amount only","currency":"currency code","confidence":{"date":"high|medium|low","category":"high|medium|low","amount":"high|medium|low","currency":"high|medium|low"},"confidence_reason":"brief uncertainty note"}
+Rules:
+- date: convert to DD/MM/YYYY
+- category_raw: copy FULL raw category/merchant info (e.g. "餐饮/黄焖鸡米饭 - Food Delivery (Meituan)"). Include all detail.
+- amount: CRITICAL — if receipt shows BOTH a local currency AND USDT/USD amount, ALWAYS use the USDT/USD amount and set currency to USDT. Only use local currency when NO USDT/USD is visible.
+- currency: USD→USDT, CNY/¥→RMB, RM→MYR. If undetectable use UNKNOWN.`}
+      ]}]})
+    });
+    const data=await res.json();const text=(data.content||[]).map(b=>b.text||'').join('').replace(/```json|```/g,'').trim();return JSON.parse(text);
+  }catch(e){return null;}
+}
+
+// ===== FILE HANDLING =====
+async function handleFiles(files) {
+  if(!files.length) return;
+  document.getElementById('receipts-area').style.display='block';document.getElementById('welcome-box').style.display='none';
+  totalCount+=files.length;document.getElementById('progress-wrap').style.display='block';updateProgress();
+  const arr=Array.from(files);for(let i=0;i<arr.length;i+=5){await Promise.all(arr.slice(i,i+5).map(f=>processFile(f)));}
+  if(processingCount>=totalCount)setTimeout(()=>{document.getElementById('progress-wrap').style.display='none';},2000);
+}
+async function processFile(file) {
+  const id=Date.now()+Math.random();
+  const entry={id,date:'',particular:'',amount:'',currency:'',section:'others',loading:true,imageData:null,receiptUrl:'',uploading:!!gAccessToken,categoryRaw:'',error:false,confidence:null,confidenceReason:''};
+  entry.imageData=await toBase64(file);expenses.push(entry);renderAll();
+  const b64=entry.imageData.split(',')[1],mime=file.type||'image/png',fname=`receipt_${Date.now()}_${Math.floor(Math.random()*9999)}.${mime.split('/')[1]||'png'}`;
+  const[ai,driveUrl]=await Promise.all([scanWithAI(b64,mime),gAccessToken?uploadToDrive(b64,mime,fname):Promise.resolve(null)]);
+  if(ai){entry.date=ai.date||'';entry.amount=ai.amount||'';entry.currency=normalizeCurrency(ai.currency);const mapped=mapParticular(ai.category_raw);entry.particular=mapped.val||'';entry.section=mapped.val?mapped.section:'others';entry.categoryRaw=ai.category_raw||'';entry.confidence=ai.confidence||null;entry.confidenceReason=ai.confidence_reason||'';}else{entry.error=true;}
+  if(driveUrl)entry.receiptUrl=driveUrl;entry.loading=false;entry.uploading=false;processingCount++;updateProgress();renderAll();saveSession();
+}
+function toBase64(f){return new Promise(r=>{const a=new FileReader();a.onload=()=>r(a.result);a.readAsDataURL(f);});}
+function updateProgress(){const p=totalCount>0?Math.round((processingCount/totalCount)*100):0;document.getElementById('progress-bar').style.width=p+'%';document.getElementById('progress-count').textContent=`${processingCount} / ${totalCount}`;document.getElementById('progress-label').textContent=processingCount<totalCount?'Scanning receipts…':'All done!';}
+function update(id,field,val){const e=expenses.find(x=>x.id===id);if(!e)return;e[field]=val;if(field==='particular'){const m=mapParticular(val);if(m.val){e.particular=m.val;e.section=m.section;}else{e.section='others';}}if(field==='currency'){e.currency=normalizeCurrency(val);}renderAll();saveSession();}
+function removeExpense(id){expenses=expenses.filter(x=>x.id!==id);renderAll();saveSession();}
+function clearAll(){if(!expenses.length)return;if(confirm('Clear all receipts and delete this session?')){const d=document.getElementById('f-claimdate').value;if(d)localStorage.removeItem(getSessionKey(d));expenses=[];processingCount=0;totalCount=0;document.getElementById('receipts-area').style.display='none';document.getElementById('progress-wrap').style.display='none';document.getElementById('export-status').textContent='';document.getElementById('welcome-box').style.display='block';renderSessionsList();}}
+
+// ===== RENDER =====
+function renderCard(e,dupes) {
+  const isDupe=dupes&&dupes.has(e.id),conf=calcConfidence(e),bc=getBadgeClass(e.particular);
+  const thumb=e.imageData?`<img src="${e.imageData}" class="receipt-thumb" onclick="openLightbox(${e.id})" />`:`<div class="receipt-thumb-ph">📄</div>`;
+  const statusBadge=e.loading?`<span class="badge badge-pending"><span class="spinner"></span> Scanning…</span>`:e.error?`<span class="badge badge-error">Could not read</span>`:`<span class="badge ${bc}">${e.particular||'—'}</span>`;
+  const driveStatus=e.uploading?`<span class="badge badge-pending"><span class="spinner"></span> Uploading…</span>`:e.receiptUrl?`<span class="badge badge-food">✓ Drive</span>`:'';
+  const confBadge=!e.loading&&!e.error?`<span class="conf-badge conf-${conf}"><span class="conf-dot conf-dot-${conf}"></span>${conf.charAt(0).toUpperCase()+conf.slice(1)}</span>`:'';
+  const currWarn=!e.loading&&!e.error&&(!e.currency||e.currency==='UNKNOWN')?`<span class="badge badge-warn">⚠ Set currency</span>`:'';
+  const dupeBadge=isDupe?`<span class="badge badge-warn">⚠ Possible duplicate</span>`:'';
+  const confReason=e.confidenceReason&&conf!=='high'?`<span class="tag-raw">⚠ ${e.confidenceReason}</span>`:'';
+  const pItems=PARTICULARS.map(p=>`<div class="cdrop-item ${e.particular===p?'active':''}" onclick="pickDrop(this,${e.id},'particular','${p}')">${p}</div>`).join('');
+  const cItems=CURRENCIES.map(c=>`<div class="cdrop-item ${e.currency===c?'active':''}" onclick="pickDrop(this,${e.id},'currency','${c}')">${c}</div>`).join('');
+  return `<div class="receipt-card conf-${e.loading?'':conf}" style="${isDupe?'border-color:#fbbf24;background:#fffbeb;':''}">
+    <div class="receipt-top">${thumb}<div class="receipt-fields">
+      <div><div style="font-size:10px;color:#9ca3af;margin-bottom:3px;">Date</div><input value="${e.date}" onchange="update(${e.id},'date',this.value)" placeholder="DD/MM/YYYY" style="${e.confidence?.date==='low'?'border-color:#fca5a5;background:#fff5f5;':''}" /></div>
+      <div><div style="font-size:10px;color:#9ca3af;margin-bottom:3px;">Particular</div><div class="cdrop"><input class="cdrop-input" value="${e.particular}" onclick="openDrop(this)" oninput="filterDrop(this,${e.id},'particular')" onchange="customDrop(this,${e.id},'particular')" placeholder="Type or select…" style="${e.confidence?.category==='low'?'border-color:#fca5a5;background:#fff5f5;':''}" /><div class="cdrop-list">${pItems}<div class="cdrop-divider"></div><div style="padding:5px 10px;font-size:11px;color:#9ca3af;">Type custom value above</div></div></div></div>
+      <div><div style="font-size:10px;color:#9ca3af;margin-bottom:3px;">Amount</div><input value="${e.amount}" onchange="update(${e.id},'amount',this.value)" placeholder="0.00" style="${e.confidence?.amount==='low'?'border-color:#fca5a5;background:#fff5f5;':''}" /></div>
+      <div><div style="font-size:10px;color:#9ca3af;margin-bottom:3px;">Currency</div><div class="cdrop"><input class="cdrop-input" value="${e.currency||''}" onclick="openDrop(this)" oninput="filterDrop(this,${e.id},'currency')" onchange="customDrop(this,${e.id},'currency')" placeholder="?" style="${!e.currency||e.currency==='UNKNOWN'?'border-color:#fca5a5;background:#fff5f5;':''}" /><div class="cdrop-list">${cItems}<div class="cdrop-divider"></div><div style="padding:5px 10px;font-size:11px;color:#9ca3af;">Type custom currency</div></div></div></div>
+    </div><button class="btn btn-danger btn-sm" onclick="removeExpense(${e.id})" style="align-self:flex-start;padding:6px 8px;">✕</button></div>
+    <div class="receipt-link-row"><span style="flex-shrink:0;color:#9ca3af;font-size:12px;">🔗</span><input class="${e.receiptUrl?'has-link':''}" value="${e.receiptUrl}" onchange="update(${e.id},'receiptUrl',this.value)" placeholder="${gAccessToken?'Auto-uploading…':'Connect Drive for auto-links'}" ${e.receiptUrl?'readonly':''} />${e.receiptUrl?`<a href="${e.receiptUrl}" target="_blank" style="font-size:12px;color:#2563eb;white-space:nowrap;">Open ↗</a>`:''}</div>
+    <div class="receipt-status">${statusBadge} ${driveStatus} ${confBadge} ${currWarn} ${dupeBadge} ${confReason} ${e.categoryRaw&&!e.loading?`<span class="tag-raw">detected: "${e.categoryRaw}" · currency: "${e.currency||'?'}"</span>`:''}</div>
+  </div>`;
+}
+
+function renderAll() {
+  const dupes=findDuplicates(),sorted=[...expenses].sort((a,b)=>parseDate(a.date)-parseDate(b.date));
+  const food=sorted.filter(e=>e.section==='food'),others=sorted.filter(e=>e.section==='others');
+  document.getElementById('food-list').innerHTML=food.length?food.map(e=>renderCard(e,dupes)).join(''):'<div class="empty-state">No food & accommodation yet.</div>';
+  document.getElementById('others-list').innerHTML=others.length?others.map(e=>renderCard(e,dupes)).join(''):'<div class="empty-state">No other receipts yet.</div>';
+  const currencies={};expenses.forEach(e=>{const c=e.currency||'UNKNOWN';if(!currencies[c])currencies[c]=0;currencies[c]+=parseFloat(e.amount)||0;});
+  let sh=`<div class="metric"><div class="metric-label">Total receipts</div><div class="metric-value">${expenses.length}</div></div>`;
+  Object.keys(currencies).sort((a,b)=>a==='USDT'?-1:b==='USDT'?1:a.localeCompare(b)).forEach(c=>{sh+=`<div class="metric"><div class="metric-label">Total (${c})</div><div class="metric-value">${currencies[c].toFixed(c==='JPY'||c==='KRW'?0:2)}</div></div>`;});
+  const done=expenses.filter(e=>!e.loading&&!e.error);
+  if(done.length>0){const high=done.filter(e=>calcConfidence(e)==='high').length,pct=Math.round((high/done.length)*100);sh+=`<div class="metric"><div class="metric-label">Accuracy</div><div class="metric-value ${pct>=80?'good':pct>=50?'warn':'bad'}">${pct}%</div></div>`;}
+  document.getElementById('summary-bar').innerHTML=sh;
+}
+
+function openLightbox(id){const e=expenses.find(x=>x.id==id);if(e?.imageData){document.getElementById('lightbox-img').src=e.imageData;document.getElementById('lightbox').classList.add('open');}}
+function closeLightbox(){document.getElementById('lightbox').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox();});
+
+// ===== EXPORT TO GOOGLE SHEETS =====
+async function exportToSheets() {
+  if(!gAccessToken){alert('Connect Google Drive first.');return;}
+  if(!expenses.length){alert('No receipts.');return;}
+  const claimant=document.getElementById('f-claimant').value||'',project=document.getElementById('f-project').value||'',account=document.getElementById('f-account').value||'',country=document.getElementById('f-country').value||'',claimDate=document.getElementById('f-claimdate').value||'';
+  const sorted=[...expenses].sort((a,b)=>parseDate(a.date)-parseDate(b.date));
+  const food=sorted.filter(e=>e.section==='food'),others=sorted.filter(e=>e.section==='others');
+  const localCurrencies=getAllCurrencies();
+  const status=document.getElementById('export-status');
+  status.innerHTML='<span style="color:#6b7280;"><span class="spinner" style="vertical-align:middle;margin-right:6px;"></span>Creating Google Sheet…</span>';
+  try {
+    const amtHeaders=['Amount (USDT)',...localCurrencies.map(c=>`Amount (${c})`)];
+    const fixedAfter=['Remark','Receipt Link','Rate','Converted Amount'];
+    const foodHeaders=['Date','Particular',...amtHeaders,...fixedAfter];
+    const othersHeaders=['Date','Particular',...amtHeaders,'Remark','Receipt Link'];
+    const totalCols=foodHeaders.length;
+    function makeRow(e,h){const r=new Array(h.length).fill('');r[0]=e.date;r[1]=e.particular;if(e.currency==='USDT')r[2]=e.amount;localCurrencies.forEach((c,i)=>{if(e.currency===c)r[3+i]=e.amount;});const ri=2+1+localCurrencies.length;r[ri+1]=e.receiptUrl||'';return r;}
+    const rows=[],pad=a=>{while(a.length<totalCols)a.push('');return a;};
+    rows.push(pad(['Claimaint :',claimant,'','Project:',project]));rows.push(pad([]));
+    rows.push(pad(['Account No. / Wallet :',account,'','Claim Currecy:','USDT']));rows.push(pad(['','','','(RM/U)']));
+    rows.push(pad(['Country visited :',country]));rows.push(pad([]));
+    rows.push(pad(['Food & Accomodation',...new Array(amtHeaders.length).fill(''),'','','Account Used']));
+    rows.push(pad(foodHeaders));
+    const foodStart=9,FOOD_ROWS=Math.max(food.length,1);
+    for(let i=0;i<FOOD_ROWS;i++)rows.push(pad(food[i]?makeRow(food[i],foodHeaders):new Array(totalCols).fill('')));
+    const ft=new Array(totalCols).fill('');ft[1]='Total';for(let c=2;c<2+1+localCurrencies.length;c++){const cl=String.fromCharCode(65+c);ft[c]=`=SUM(${cl}${foodStart}:${cl}${foodStart+FOOD_ROWS-1})`;}rows.push(pad(ft));rows.push(pad([]));
+    rows.push(pad(['Others']));rows.push(pad(othersHeaders));
+    const othersStart=rows.length+1,OTHER_ROWS=Math.max(others.length,1);
+    for(let i=0;i<OTHER_ROWS;i++)rows.push(pad(others[i]?makeRow(others[i],othersHeaders):new Array(totalCols).fill('')));
+    const ot=new Array(totalCols).fill('');ot[1]='Total';for(let c=2;c<2+1+localCurrencies.length;c++){const cl=String.fromCharCode(65+c);ot[c]=`=SUM(${cl}${othersStart}:${cl}${othersStart+OTHER_ROWS-1})`;}rows.push(pad(ot));
+
+    const sheetTitle=`${claimant||'Export'} - Expense Claim ${claimDate}`;
+    const createRes=await(await fetch('https://sheets.googleapis.com/v4/spreadsheets',{method:'POST',headers:{'Authorization':`Bearer ${gAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify({properties:{title:sheetTitle},sheets:[{properties:{title:'Sheet1'}}]})})).json();
+    const spreadsheetId=createRes.spreadsheetId;
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Sheet1!A1?valueInputOption=USER_ENTERED`,{method:'PUT',headers:{'Authorization':`Bearer ${gAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:rows})});
+    if(claimFolderId){await fetch(`https://www.googleapis.com/drive/v3/files/${spreadsheetId}?addParents=${claimFolderId}&removeParents=root&fields=id`,{method:'PATCH',headers:{'Authorization':`Bearer ${gAccessToken}`}});}
+    // Make sheet public
+    await fetch(`https://www.googleapis.com/drive/v3/files/${spreadsheetId}/permissions`,{method:'POST',headers:{'Authorization':`Bearer ${gAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
+    const sheetUrl=`https://docs.google.com/spreadsheets/d/${spreadsheetId}`;
+    status.innerHTML=`<span style="color:#16a34a;font-weight:500;">✓ Sheet created & shared publicly! <a href="${sheetUrl}" target="_blank">Open Google Sheet ↗</a></span><br><span style="font-size:12px;color:#6b7280;margin-top:4px;display:block;">Public link (send to checker): <a href="${sheetUrl}" target="_blank">${sheetUrl}</a></span>`;
+    window.open(sheetUrl,'_blank');
+  }catch(e){status.innerHTML=`<span style="color:#dc2626;">✗ Failed: ${e.message}. Enable Sheets API in Cloud Console.</span>`;}
+}
+
+const zone=document.getElementById('upload-zone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');handleFiles(e.dataTransfer.files);});
+</script>
+</body>
+</html>
